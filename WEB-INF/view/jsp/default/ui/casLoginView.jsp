@@ -64,10 +64,10 @@
 
     <form:errors path="*" id="msg" cssClass="errors" element="div" htmlEscape="false" />
     
-    <section class="row check">
+    <%--<section class="row check">
       <input id="warn" name="warn" value="true" tabindex="3" accesskey="<spring:message code="screen.welcome.label.warn.accesskey" />" type="checkbox" />
       <label for="warn"><spring:message code="screen.welcome.label.warn" /></label>
-    </section>
+    </section>--%>
     
     <section class="row btn-row">
       <input type="hidden" name="lt" value="${loginTicket}" />
