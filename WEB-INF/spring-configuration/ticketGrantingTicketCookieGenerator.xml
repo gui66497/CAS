@@ -28,7 +28,7 @@
 		You can change the name if you want to make it harder for people to guess.
 	</description>
 	<bean id="ticketGrantingTicketCookieGenerator" class="org.jasig.cas.web.support.CookieRetrievingCookieGenerator"
-		p:cookieSecure="false"
+		p:cookieSecure="true"
 		p:cookieMaxAge="-1"
 		p:cookieName="CASTGC"
 		p:cookiePath="/cas" />
