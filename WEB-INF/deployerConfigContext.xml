@@ -114,7 +114,7 @@
     <bean id="primaryAuthenticationHandler"
           class="org.jasig.cas.adaptors.jdbc.QueryDatabaseAuthenticationHandler">
         <property name="dataSource" ref="mysqlDataSource"/>  
-        <property name="sql" value="select password from tb_staff where user_name = ?" />  
+        <property name="sql" value="select password from tb_staff where user_name = ? and delete_flag = 0" />  
         <property name="passwordEncoder"  ref="MD5PasswordEncoder"/>  
     </bean>
 
