@@ -61,7 +61,7 @@
                    | set its name to something other than its default name (typically the simple class name).
                    -->
                 <entry key-ref="proxyAuthenticationHandler" value-ref="proxyPrincipalResolver" />
-                <entry key-ref="primaryAuthenticationHandler" value-ref="primaryPrincipalResolver" />
+                <entry key-ref="ldapAuthHandler" value-ref="primaryPrincipalResolver" />
             </map>
         </constructor-arg>
 
@@ -87,18 +87,12 @@
         </property>
     </bean>
 
-    <bean id="mysqlDataSource" class="org.apache.commons.dbcp.BasicDataSource">  
-         <property name="driverClassName" value="com.mysql.jdbc.Driver" />  
-         <property name="url" value="jdbc:mysql://localhost:3306/zzoa?characterEncoding=utf-8"/>  
-         <property name="username" value="root" />  
-         <property name="password" value="root" />  
-    </bean>  
-
     <!-- Required for proxy ticket mechanism. -->
     <bean id="proxyAuthenticationHandler"
           class="org.jasig.cas.authentication.handler.support.HttpBasedServiceCredentialsAuthenticationHandler"
           p:httpClient-ref="httpClient"/>
 
+    <!--ldap相关 开始-->
     <!--
        | TODO: Replace this component with one suitable for your enviroment.
        |
@@ -111,18 +105,61 @@
        | * org.jasig.cas.adaptors.x509.authentication.handler.support.X509CredentialsAuthenticationHandler
        | * org.jasig.cas.support.spnego.authentication.handler.support.JCIFSSpnegoAuthenticationHandler
        -->
-    <bean id="primaryAuthenticationHandler"
-          class="org.jasig.cas.adaptors.jdbc.QueryDatabaseAuthenticationHandler">
-        <property name="dataSource" ref="mysqlDataSource"/>  
-        <property name="sql" value="select password from tb_staff where user_name = ? and delete_flag = 0" />  
-        <property name="passwordEncoder"  ref="MD5PasswordEncoder"/>  
+    <bean id="ldapAuthHandler" class="org.jasig.cas.authentication.LdapAuthenticationHandler"
+          p:principalIdAttribute="cn" c:authenticator-ref="authenticator">
+        <property name="principalAttributeMap">
+            <map>
+                <entry key="cn" value="cn" />
+            </map>
+        </property>
+        <property name="allowMultiplePrincipalAttributeValues" value="true"/>
     </bean>
 
-    <bean id="MD5PasswordEncoder" class="org.jasig.cas.authentication.handler.DefaultPasswordEncoder">
-        <constructor-arg index="0">
-            <value>MD5</value>
-         </constructor-arg>
-    </bean>
+    <bean id="authenticator" class="org.ldaptive.auth.Authenticator"
+          c:resolver-ref="multiDnResolver" c:handler-ref="authHandler" />
+
+    <!-- <bean id="adDnResolver" class="org.ldaptive.auth.FormatDnResolver"
+	 c:format="cn=%user,ou=admin,dc=zzjz,dc=com" /> -->
+
+    <bean id="multiDnResolver" class="org.ldaptive.auth.SearchDnResolver"
+          p:baseDn="dc=zzjz,dc=com"
+          p:subtreeSearch="true"
+          p:allowMultipleDns="false"
+          p:connectionFactory-ref="connectionFactory"
+          p:userFilter="(cn={user})" />
+
+    <bean id="authHandler" class="org.ldaptive.auth.PooledBindAuthenticationHandler"
+          p:connectionFactory-ref="pooledLdapConnectionFactory" />
+
+    <bean id="pooledLdapConnectionFactory" class="org.ldaptive.pool.PooledConnectionFactory"
+          p:connectionPool-ref="connectionPool" />
+
+    <bean id="connectionPool" class="org.ldaptive.pool.BlockingConnectionPool"
+          init-method="initialize" p:poolConfig-ref="ldapPoolConfig"
+          p:blockWaitTime="3000" p:validator-ref="searchValidator"
+          p:pruneStrategy-ref="pruneStrategy" p:connectionFactory-ref="connectionFactory" />
+
+    <bean id="ldapPoolConfig" class="org.ldaptive.pool.PoolConfig"
+          p:minPoolSize="3" p:maxPoolSize="10" p:validateOnCheckOut="false"
+          p:validatePeriodically="true" p:validatePeriod="300" />
+
+
+    <bean id="connectionFactory" class="org.ldaptive.DefaultConnectionFactory"
+          p:connectionConfig-ref="connectionConfig" />
+
+
+    <bean id="connectionConfig" class="org.ldaptive.ConnectionConfig"
+          p:ldapUrl="ldap://192.168.1.220:6389" p:connectTimeout="3000"
+          p:useStartTLS="false" /><!--p:sslConfig-ref="sslConfig" 上面内容根据自己的LDAP内容来配置 -->
+
+    <bean id="pruneStrategy" class="org.ldaptive.pool.IdlePruneStrategy"
+          p:prunePeriod="300" p:idleTime="600" />
+
+
+    <bean id="searchValidator" class="org.ldaptive.pool.SearchValidator" />
+    <!--ldap相关 结束-->
+
+
 
     <!-- Required for proxy ticket mechanism -->
     <bean id="proxyPrincipalResolver"
